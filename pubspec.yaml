@@ -1,0 +1,15 @@
+name: rx_obx
+description: "Only getx state management function"
+version: 0.0.1
+homepage: https://github.com/jonataslaw/getx
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^3.0.1
