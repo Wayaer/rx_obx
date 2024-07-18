@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:rx_obx/rx_obx.dart';
 
-typedef WidgetCallback = Widget Function();
+typedef RxObxBuilder = Widget Function();
 
 /// The [ObxWidget] is the base for all GetX reactive widgets
 ///
@@ -63,7 +63,7 @@ class ObxState extends State<ObxWidget> {
 /// final _name = "GetX".obs;
 /// Obx(() => Text( _name.value )),... ;
 class Obx extends ObxWidget {
-  final WidgetCallback builder;
+  final RxObxBuilder builder;
 
   const Obx(this.builder, {super.key});
 

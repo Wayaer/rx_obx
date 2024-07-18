@@ -11,9 +11,9 @@ class MiniSubscription<T> {
   const MiniSubscription(
       this.data, this.onError, this.onDone, this.cancelOnError, this.listener);
 
-  final OnData<T> data;
+  final RxOnData<T> data;
   final Function? onError;
-  final Callback? onDone;
+  final RxCallback? onDone;
   final bool cancelOnError;
 
   Future<void> cancel() async => listener.removeListener(this);

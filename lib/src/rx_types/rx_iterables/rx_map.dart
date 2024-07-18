@@ -1,7 +1,7 @@
 part of '../rx_types.dart';
 
 class RxMap<K, V> extends MapMixin<K, V>
-    with NotifyManager<Map<K, V>>, RxObjectMixin<Map<K, V>>
+    with RxNotifyManager<Map<K, V>>, RxObjectMixin<Map<K, V>>
     implements RxInterface<Map<K, V>> {
   RxMap([Map<K, V> initial = const {}]) {
     _value = Map.from(initial);
@@ -67,14 +67,14 @@ extension MapExtension<K, V> on Map<K, V> {
   }
 
   void addIf(dynamic condition, K key, V value) {
-    if (condition is Condition) condition = condition();
+    if (condition is RxCondition) condition = condition();
     if (condition is bool && condition) {
       this[key] = value;
     }
   }
 
   void addAllIf(dynamic condition, Map<K, V> values) {
-    if (condition is Condition) condition = condition();
+    if (condition is RxCondition) condition = condition();
     if (condition is bool && condition) addAll(values);
   }
 

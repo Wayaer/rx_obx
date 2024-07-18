@@ -2,7 +2,7 @@ part of '../rx_types.dart';
 
 /// Create a list similar to `List<T>`
 class RxList<E> extends ListMixin<E>
-    with NotifyManager<List<E>>, RxObjectMixin<List<E>>
+    with RxNotifyManager<List<E>>, RxObjectMixin<List<E>>
     implements RxInterface<List<E>> {
   RxList([List<E> initial = const []]) {
     _value = List.from(initial);
@@ -141,13 +141,13 @@ extension ListExtension<E> on List<E> {
 
   /// Add [item] to List<E> only if [condition] is true.
   void addIf(dynamic condition, E item) {
-    if (condition is Condition) condition = condition();
+    if (condition is RxCondition) condition = condition();
     if (condition is bool && condition) add(item);
   }
 
   /// Adds [Iterable<E>] to [List<E>] only if [condition] is true.
   void addAllIf(dynamic condition, Iterable<E> items) {
-    if (condition is Condition) condition = condition();
+    if (condition is RxCondition) condition = condition();
     if (condition is bool && condition) addAll(items);
   }
 

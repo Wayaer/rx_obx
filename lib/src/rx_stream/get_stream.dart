@@ -153,22 +153,22 @@ class LightSubscription<T> implements StreamSubscription<T> {
     return Future.value();
   }
 
-  OnData<T>? _data;
+  RxOnData<T>? _data;
 
   Function? _onError;
 
-  Callback? _onDone;
+  RxCallback? _onDone;
 
   bool _isPaused = false;
 
   @override
-  void onData(OnData<T>? handleData) => _data = handleData;
+  void onData(RxOnData<T>? handleData) => _data = handleData;
 
   @override
   void onError(Function? handleError) => _onError = handleError;
 
   @override
-  void onDone(Callback? handleDone) => _onDone = handleDone;
+  void onDone(RxCallback? handleDone) => _onDone = handleDone;
 
   @override
   void pause([Future<void>? resumeSignal]) {

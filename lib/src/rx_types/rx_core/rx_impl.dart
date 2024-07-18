@@ -4,7 +4,7 @@ part of '../rx_types.dart';
 /// reactivity
 /// of those `Widgets` and Rx values.
 
-mixin RxObjectMixin<T> on NotifyManager<T> {
+mixin RxObjectMixin<T> on RxNotifyManager<T> {
   late T _value;
 
   /// Makes a direct update of [value] adding it to the Stream
@@ -139,9 +139,9 @@ mixin RxObjectMixin<T> on NotifyManager<T> {
   }
 }
 
-class RxNotifier<T> = RxInterface<T> with NotifyManager<T>;
+class RxNotifier<T> = RxInterface<T> with RxNotifyManager<T>;
 
-mixin NotifyManager<T> {
+mixin RxNotifyManager<T> {
   GetStream<T> subject = GetStream<T>();
   final _subscriptions = <GetStream, List<StreamSubscription>>{};
 
@@ -367,22 +367,27 @@ class Rxn<T> extends Rx<T?> {
   }
 }
 
-extension StringExtension on String {
+extension RxStringExtension on String {
   /// Returns a `RxString` with [this] `String` as initial value.
   RxString get obs => RxString(this);
 }
 
-extension IntExtension on int {
+extension RxNumExtension on num {
+  /// Returns a `RxNum` with [this] `int` as initial value.
+  RxNum get obs => RxNum(this);
+}
+
+extension RxIntExtension on int {
   /// Returns a `RxInt` with [this] `int` as initial value.
   RxInt get obs => RxInt(this);
 }
 
-extension DoubleExtension on double {
+extension RxDoubleExtension on double {
   /// Returns a `RxDouble` with [this] `double` as initial value.
   RxDouble get obs => RxDouble(this);
 }
 
-extension BoolExtension on bool {
+extension RxBoolExtension on bool {
   /// Returns a `RxBool` with [this] `bool` as initial value.
   RxBool get obs => RxBool(this);
 }

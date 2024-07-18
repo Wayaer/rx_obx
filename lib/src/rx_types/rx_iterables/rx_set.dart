@@ -1,7 +1,7 @@
 part of '../rx_types.dart';
 
 class RxSet<E> extends SetMixin<E>
-    with NotifyManager<Set<E>>, RxObjectMixin<Set<E>>
+    with RxNotifyManager<Set<E>>, RxObjectMixin<Set<E>>
     implements RxInterface<Set<E>> {
   RxSet([Set<E> initial = const {}]) {
     _value = Set.from(initial);
@@ -120,13 +120,13 @@ extension SetExtension<E> on Set<E> {
 
   /// Add [item] to [List<E>] only if [condition] is true.
   void addIf(dynamic condition, E item) {
-    if (condition is Condition) condition = condition();
+    if (condition is RxCondition) condition = condition();
     if (condition is bool && condition) add(item);
   }
 
   /// Adds [Iterable<E>] to [List<E>] only if [condition] is true.
   void addAllIf(dynamic condition, Iterable<E> items) {
-    if (condition is Condition) condition = condition();
+    if (condition is RxCondition) condition = condition();
     if (condition is bool && condition) addAll(items);
   }
 
