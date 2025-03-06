@@ -1,58 +1,14 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:rx_obx/rx_obx.dart';
-
-typedef RxObxBuilder = Widget Function();
+import 'package:rx_obx/src/rx_obx_element.dart';
 
 /// The [ObxWidget] is the base for all GetX reactive widgets
 ///
 /// See also:
 /// - [Obx]
 /// - [ObxValue]
-abstract class ObxWidget extends StatefulWidget {
+abstract class ObxWidget extends ObxStatelessWidget {
   const ObxWidget({super.key});
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties.add(ObjectFlagProperty<Function>.has('builder', build));
-  }
-
-  @override
-  ObxState createState() => ObxState();
-
-  @protected
-  Widget build();
-}
-
-class ObxState extends State<ObxWidget> {
-  final _observer = RxNotifier();
-  late StreamSubscription subs;
-
-  @override
-  void initState() {
-    super.initState();
-    subs = _observer.listen(_updateTree, cancelOnError: false);
-  }
-
-  void _updateTree(_) {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  @override
-  void dispose() {
-    subs.cancel();
-    _observer.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      RxInterface.notifyChildren(_observer, widget.build);
 }
 
 /// The simplest reactive widget in GetX.
@@ -60,15 +16,14 @@ class ObxState extends State<ObxWidget> {
 /// Just pass your Rx variable in the root scope of the callback to have it
 /// automatically registered for changes.
 ///
-/// final _name = "GetX".obs;
 /// Obx(() => Text( _name.value )),... ;
 class Obx extends ObxWidget {
-  final RxObxBuilder builder;
+  final Widget Function() builder;
 
   const Obx(this.builder, {super.key});
 
   @override
-  Widget build() => builder();
+  Widget build(BuildContext context) => builder();
 }
 
 /// Similar to Obx, but manages a local state.
@@ -89,5 +44,5 @@ class ObxValue<T extends RxInterface> extends ObxWidget {
   const ObxValue(this.builder, this.data, {super.key});
 
   @override
-  Widget build() => builder(data);
+  Widget build(BuildContext context) => builder(data);
 }

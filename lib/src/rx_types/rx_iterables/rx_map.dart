@@ -1,11 +1,7 @@
 part of '../rx_types.dart';
 
-class RxMap<K, V> extends MapMixin<K, V>
-    with RxNotifyManager<Map<K, V>>, RxObjectMixin<Map<K, V>>
-    implements RxInterface<Map<K, V>> {
-  RxMap([Map<K, V> initial = const {}]) {
-    _value = Map.from(initial);
-  }
+class RxMap<K, V> extends GetListenable<Map<K, V>> with MapMixin<K, V>, RxObjectMixin<Map<K, V>> {
+  RxMap([super.initial = const {}]);
 
   factory RxMap.from(Map<K, V> other) {
     return RxMap(Map.from(other));
@@ -33,13 +29,13 @@ class RxMap<K, V> extends MapMixin<K, V>
 
   @override
   void operator []=(K key, V value) {
-    _value[key] = value;
+    this.value[key] = value;
     refresh();
   }
 
   @override
   void clear() {
-    _value.clear();
+    value.clear();
     refresh();
   }
 
@@ -48,16 +44,9 @@ class RxMap<K, V> extends MapMixin<K, V>
 
   @override
   V? remove(Object? key) {
-    final val = _value.remove(key);
+    final val = value.remove(key);
     refresh();
     return val;
-  }
-
-  @override
-  @protected
-  Map<K, V> get value {
-    RxInterface.proxy?.addListener(subject);
-    return _value;
   }
 }
 
@@ -67,21 +56,22 @@ extension MapExtension<K, V> on Map<K, V> {
   }
 
   void addIf(dynamic condition, K key, V value) {
-    if (condition is RxCondition) condition = condition();
+    if (condition is Condition) condition = condition();
     if (condition is bool && condition) {
       this[key] = value;
     }
   }
 
   void addAllIf(dynamic condition, Map<K, V> values) {
-    if (condition is RxCondition) condition = condition();
+    if (condition is Condition) condition = condition();
     if (condition is bool && condition) addAll(values);
   }
 
   void assign(K key, V val) {
     if (this is RxMap) {
       final map = (this as RxMap);
-      map._value.clear();
+      // map._value;
+      map.value.clear();
       this[key] = val;
     } else {
       clear();
@@ -91,12 +81,13 @@ extension MapExtension<K, V> on Map<K, V> {
 
   void assignAll(Map<K, V> val) {
     if (val is RxMap && this is RxMap) {
-      if ((val as RxMap)._value == (this as RxMap)._value) return;
+      if ((val as RxMap).value == (this as RxMap).value) return;
     }
     if (this is RxMap) {
       final map = (this as RxMap);
-      if (map._value == val) return;
-      map._value = val;
+      if (map.value == val) return;
+      map.value = val;
+      // ignore: invalid_use_of_protected_member
       map.refresh();
     } else {
       if (this == val) return;

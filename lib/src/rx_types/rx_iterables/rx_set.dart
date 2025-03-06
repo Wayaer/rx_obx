@@ -1,17 +1,12 @@
 part of '../rx_types.dart';
 
-class RxSet<E> extends SetMixin<E>
-    with RxNotifyManager<Set<E>>, RxObjectMixin<Set<E>>
-    implements RxInterface<Set<E>> {
-  RxSet([Set<E> initial = const {}]) {
-    _value = Set.from(initial);
-  }
+class RxSet<E> extends GetListenable<Set<E>> with SetMixin<E>, RxObjectMixin<Set<E>> {
+  RxSet([super.initial = const {}]);
 
   /// Special override to push() element(s) in a reactive way
   /// inside the List,
   RxSet<E> operator +(Set<E> val) {
     addAll(val);
-    refresh();
     return this;
   }
 
@@ -21,25 +16,12 @@ class RxSet<E> extends SetMixin<E>
   }
 
   @override
-  @protected
-  Set<E> get value {
-    RxInterface.proxy?.addListener(subject);
-    return _value;
-  }
-
-  @override
-  @protected
-  set value(Set<E> val) {
-    if (_value == val) return;
-    _value = val;
-    refresh();
-  }
-
-  @override
   bool add(E value) {
-    final val = _value.add(value);
-    refresh();
-    return val;
+    final hasAdded = this.value.add(value);
+    if (hasAdded) {
+      refresh();
+    }
+    return hasAdded;
   }
 
   @override
@@ -60,7 +42,7 @@ class RxSet<E> extends SetMixin<E>
 
   @override
   bool remove(Object? value) {
-    var hasRemoved = _value.remove(value);
+    var hasRemoved = this.value.remove(value);
     if (hasRemoved) {
       refresh();
     }
@@ -74,31 +56,31 @@ class RxSet<E> extends SetMixin<E>
 
   @override
   void addAll(Iterable<E> elements) {
-    _value.addAll(elements);
+    value.addAll(elements);
     refresh();
   }
 
   @override
   void clear() {
-    _value.clear();
+    value.clear();
     refresh();
   }
 
   @override
   void removeAll(Iterable<Object?> elements) {
-    _value.removeAll(elements);
+    value.removeAll(elements);
     refresh();
   }
 
   @override
   void retainAll(Iterable<Object?> elements) {
-    _value.retainAll(elements);
+    value.retainAll(elements);
     refresh();
   }
 
   @override
   void retainWhere(bool Function(E) test) {
-    _value.retainWhere(test);
+    value.retainWhere(test);
     refresh();
   }
 }
@@ -120,13 +102,13 @@ extension SetExtension<E> on Set<E> {
 
   /// Add [item] to [List<E>] only if [condition] is true.
   void addIf(dynamic condition, E item) {
-    if (condition is RxCondition) condition = condition();
+    if (condition is Condition) condition = condition();
     if (condition is bool && condition) add(item);
   }
 
   /// Adds [Iterable<E>] to [List<E>] only if [condition] is true.
   void addAllIf(dynamic condition, Iterable<E> items) {
-    if (condition is RxCondition) condition = condition();
+    if (condition is Condition) condition = condition();
     if (condition is bool && condition) addAll(items);
   }
 

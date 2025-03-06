@@ -1,12 +1,8 @@
 part of '../rx_types.dart';
 
 /// Create a list similar to `List<T>`
-class RxList<E> extends ListMixin<E>
-    with RxNotifyManager<List<E>>, RxObjectMixin<List<E>>
-    implements RxInterface<List<E>> {
-  RxList([List<E> initial = const []]) {
-    _value = List.from(initial);
-  }
+class RxList<E> extends GetListenable<List<E>> with ListMixin<E> {
+  RxList([super.initial = const []]);
 
   factory RxList.filled(int length, E fill, {bool growable = false}) {
     return RxList(List.filled(length, fill, growable: growable));
@@ -42,7 +38,7 @@ class RxList<E> extends ListMixin<E>
 
   @override
   void operator []=(int index, E val) {
-    _value[index] = val;
+    value[index] = val;
     refresh();
   }
 
@@ -51,7 +47,7 @@ class RxList<E> extends ListMixin<E>
   @override
   RxList<E> operator +(Iterable<E> val) {
     addAll(val);
-    refresh();
+    // refresh();
     return this;
   }
 
@@ -62,52 +58,65 @@ class RxList<E> extends ListMixin<E>
 
   @override
   void add(E element) {
-    _value.add(element);
+    value.add(element);
     refresh();
   }
 
   @override
   void addAll(Iterable<E> iterable) {
-    _value.addAll(iterable);
+    value.addAll(iterable);
     refresh();
   }
 
   @override
+  bool remove(Object? element) {
+    final removed = value.remove(element);
+    refresh();
+    return removed;
+  }
+
+  @override
   void removeWhere(bool Function(E element) test) {
-    _value.removeWhere(test);
+    value.removeWhere(test);
     refresh();
   }
 
   @override
   void retainWhere(bool Function(E element) test) {
-    _value.retainWhere(test);
+    value.retainWhere(test);
     refresh();
   }
 
   @override
   int get length => value.length;
 
-  @override
-  @protected
-  List<E> get value {
-    RxInterface.proxy?.addListener(subject);
-    return _value;
-  }
+  // @override
+  // @protected
+  // List<E> get value {
+  //   RxInterface.proxy?.addListener(subject);
+  //   return subject.value;
+  // }
 
   @override
   set length(int newLength) {
-    _value.length = newLength;
+    value.length = newLength;
     refresh();
   }
 
   @override
   void insertAll(int index, Iterable<E> iterable) {
-    _value.insertAll(index, iterable);
+    value.insertAll(index, iterable);
     refresh();
   }
 
   @override
   Iterable<E> get reversed => value.reversed;
+
+  // @override
+  // set value(List<E> val) {
+  //   value = val;
+  //   refresh();
+  // }
 
   @override
   Iterable<E> where(bool Function(E) test) {
@@ -121,7 +130,7 @@ class RxList<E> extends ListMixin<E>
 
   @override
   void sort([int Function(E a, E b)? compare]) {
-    _value.sort(compare);
+    value.sort(compare);
     refresh();
   }
 }
@@ -134,20 +143,15 @@ extension ListExtension<E> on List<E> {
     if (item != null) add(item);
   }
 
-  // /// Add [Iterable<E>] to [List<E>] only if [Iterable<E>] is not null.
-  // void addAllNonNull(Iterable<E> item) {
-  //   if (item != null) addAll(item);
-  // }
-
-  /// Add [item] to List<E> only if [condition] is true.
+  /// Add [item] to [List<E>] only if [condition] is true.
   void addIf(dynamic condition, E item) {
-    if (condition is RxCondition) condition = condition();
+    if (condition is Condition) condition = condition();
     if (condition is bool && condition) add(item);
   }
 
   /// Adds [Iterable<E>] to [List<E>] only if [condition] is true.
   void addAllIf(dynamic condition, Iterable<E> items) {
-    if (condition is RxCondition) condition = condition();
+    if (condition is Condition) condition = condition();
     if (condition is bool && condition) addAll(items);
   }
 
@@ -157,16 +161,18 @@ extension ListExtension<E> on List<E> {
     //   (this as RxList)._value;
     // }
 
-    clear();
+    if (this is RxList) {
+      (this as RxList).value.clear();
+    }
     add(item);
   }
 
   /// Replaces all existing items of this list with [items]
   void assignAll(Iterable<E> items) {
-    // if (this is RxList) {
-    //   (this as RxList)._value;
-    // }
-    clear();
+    if (this is RxList) {
+      (this as RxList).value.clear();
+    }
+    //clear();
     addAll(items);
   }
 }

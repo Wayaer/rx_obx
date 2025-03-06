@@ -4,44 +4,10 @@ part of '../rx_types.dart';
 /// reactivity
 /// of those `Widgets` and Rx values.
 
-mixin RxObjectMixin<T> on RxNotifyManager<T> {
-  late T _value;
-
+mixin RxObjectMixin<T> on GetListenable<T> {
   /// Makes a direct update of [value] adding it to the Stream
-  /// useful when you make use of Rx for custom Types to referesh your UI.
+  /// useful when you make use of Rx for custom Types to refresh your UI.
   ///
-  /// Sample:
-  /// ```
-  ///  class Person {
-  ///     String name, last;
-  ///     int age;
-  ///     Person({this.name, this.last, this.age});
-  ///     @override
-  ///     String toString() => '$name $last, $age years old';
-  ///  }
-  ///
-  /// final person = Person(name: 'John', last: 'Doe', age: 18).obs;
-  /// person.value.name = 'Roi';
-  /// person.refresh();
-  /// print( person );
-  /// ```
-  void refresh() {
-    subject.add(value);
-  }
-
-  /// updates the value to `null` and adds it to the Stream.
-  /// Even with null-safety coming, is still an important feature to support, as
-  /// `call()` doesn't accept `null` values. For instance,
-  /// `InputDecoration.errorText` has to be null to not show the "error state".
-  ///
-  /// Sample:
-  /// ```
-  /// final inputError = ''.obs..nil();
-  /// print('${inputError.runtimeType}: $inputError'); // outputs > RxString: null
-  /// ```
-  // void nil() {
-  //   subject.add(_value = null);
-  // }
 
   /// Makes this Rx looks like a function so you can update a new
   /// value using `rx(someOtherValue)`. Practical to assign the Rx directly
@@ -59,6 +25,7 @@ mixin RxObjectMixin<T> on RxNotifyManager<T> {
   ///   onChanged: myText,
   /// ),
   ///```
+  @override
   T call([T? v]) {
     if (v != null) {
       value = v;
@@ -88,27 +55,19 @@ mixin RxObjectMixin<T> on RxNotifyManager<T> {
   }
 
   @override
-  int get hashCode => _value.hashCode;
+  int get hashCode => value.hashCode;
 
   /// Updates the [value] and adds it to the stream, updating the observer
   /// Widget, only if it's different from the previous value.
+  @override
   set value(T val) {
-    if (subject.isClosed) return;
+    if (isDisposed) return;
     sentToStream = false;
-    if (_value == val && !firstRebuild) return;
+    if (value == val && !firstRebuild) return;
     firstRebuild = false;
-    _value = val;
     sentToStream = true;
-    subject.add(_value);
+    super.value = val;
   }
-
-  /// Returns the current [value]
-  T get value {
-    RxInterface.proxy?.addListener(subject);
-    return _value;
-  }
-
-  Stream<T> get stream => subject.stream;
 
   /// Returns a [StreamSubscription] similar to [listen], but with the
   /// added benefit that it primes the stream with the current [value], rather
@@ -128,69 +87,19 @@ mixin RxObjectMixin<T> on RxNotifyManager<T> {
     return subscription;
   }
 
-  /// Binds an existing `Stream<T>` to this Rx<T> to keep the values in sync.
+  /// Binds an existing `Stream<T>` to this `Rx<T>` to keep the values in sync.
   /// You can bind multiple sources to update the value.
   /// Closing the subscription will happen automatically when the observer
   /// Widget (`GetX` or `Obx`) gets unmounted from the Widget tree.
   void bindStream(Stream<T> stream) {
-    final listSubscriptions =
-        _subscriptions[subject] ??= <StreamSubscription>[];
-    listSubscriptions.add(stream.listen((va) => value = va));
-  }
-}
-
-class RxNotifier<T> = RxInterface<T> with RxNotifyManager<T>;
-
-mixin RxNotifyManager<T> {
-  GetStream<T> subject = GetStream<T>();
-  final _subscriptions = <GetStream, List<StreamSubscription>>{};
-
-  bool get canUpdate => _subscriptions.isNotEmpty;
-
-  /// This is an internal method.
-  /// Subscribe to changes on the inner stream.
-  void addListener(GetStream<T> rxGetx) {
-    if (!_subscriptions.containsKey(rxGetx)) {
-      final subs = rxGetx.listen((data) {
-        if (!subject.isClosed) subject.add(data);
-      });
-      final listSubscriptions =
-          _subscriptions[rxGetx] ??= <StreamSubscription>[];
-      listSubscriptions.add(subs);
-    }
-  }
-
-  StreamSubscription<T> listen(
-    void Function(T) onData, {
-    Function? onError,
-    void Function()? onDone,
-    bool? cancelOnError,
-  }) =>
-      subject.listen(
-        onData,
-        onError: onError,
-        onDone: onDone,
-        cancelOnError: cancelOnError ?? false,
-      );
-
-  /// Closes the subscriptions for this Rx, releasing the resources.
-  void close() {
-    _subscriptions.forEach((getStream, subscriptions) {
-      for (final subscription in subscriptions) {
-        subscription.cancel();
-      }
-    });
-
-    _subscriptions.clear();
-    subject.close();
+    final sub = stream.listen((va) => value = va);
+    reportAdd(sub.cancel);
   }
 }
 
 /// Base Rx class that manages all the stream logic for any Type.
-abstract class _RxImpl<T> extends RxNotifier<T> with RxObjectMixin<T> {
-  _RxImpl(T initial) {
-    _value = initial;
-  }
+abstract class _RxImpl<T> extends GetListenable<T> with RxObjectMixin<T> {
+  _RxImpl(super.initial);
 
   void addError(Object error, [StackTrace? stackTrace]) {
     subject.addError(error, stackTrace);
@@ -218,9 +127,8 @@ abstract class _RxImpl<T> extends RxNotifier<T> with RxObjectMixin<T> {
   /// });
   /// print( person );
   /// ```
-  void update(void Function(T? val) fn) {
-    fn(_value);
-    subject.add(_value);
+  void update(T Function(T? val) fn) {
+    value = fn(value);
   }
 
   /// Following certain practices on Rx data, we might want to react to certain
@@ -233,8 +141,8 @@ abstract class _RxImpl<T> extends RxNotifier<T> with RxObjectMixin<T> {
   ///
   /// For example, supposed we have a `int seconds = 2` and we want to animate
   /// from invisible to visible a widget in two seconds:
-  /// RxEvent<int>.call(seconds);
-  /// then after a click happens, you want to call a RxEvent<int>.call(seconds).
+  /// `RxEvent<int>.call(seconds);`
+  /// then after a click happens, you want to call a `RxEvent<int>.call(seconds)`.
   /// By doing `call(seconds)`, if the value being held is the same,
   /// the listeners won't trigger, hence we need this new `trigger` function.
   /// This will refresh the listener of an AnimatedWidget and will keep
@@ -251,8 +159,6 @@ abstract class _RxImpl<T> extends RxNotifier<T> with RxObjectMixin<T> {
   void trigger(T v) {
     var firstRebuild = this.firstRebuild;
     value = v;
-    // If it's not the first rebuild, the listeners have been called already
-    // So we won't call them again.
     if (!firstRebuild && !sentToStream) {
       subject.add(v);
     }
@@ -263,18 +169,14 @@ class RxBool extends Rx<bool> {
   RxBool(super.initial);
 
   @override
-  String toString() {
-    return value ? "true" : "false";
-  }
+  String toString() => value ? "true" : "false";
 }
 
 class RxnBool extends Rx<bool?> {
   RxnBool([super.initial]);
 
   @override
-  String toString() {
-    return "$value";
-  }
+  String toString() => "$value";
 }
 
 extension RxBoolExt on Rx<bool> {
@@ -290,12 +192,8 @@ extension RxBoolExt on Rx<bool> {
 
   /// Toggles the bool [value] between false and true.
   /// A shortcut for `flag.value = !flag.value;`
-  /// FIXME: why return this? fluent interface is not
-  ///  not really a dart thing since we have '..' operator
-  // ignore: avoid_returning_this
-  Rx<bool> toggle() {
-    subject.add(_value = !_value);
-    return this;
+  void toggle() {
+    call(!value);
   }
 }
 
@@ -325,15 +223,10 @@ extension RxnBoolExt on Rx<bool?> {
 
   /// Toggles the bool [value] between false and true.
   /// A shortcut for `flag.value = !flag.value;`
-  /// FIXME: why return this? fluent interface is not
-  ///  not really a dart thing since we have '..' operator
-  // ignore: avoid_returning_this
-  Rx<bool?>? toggle() {
-    if (_value != null) {
-      subject.add(_value = !_value!);
-      return this;
+  void toggle() {
+    if (value != null) {
+      call(!value!);
     }
-    return null;
   }
 }
 
@@ -367,32 +260,36 @@ class Rxn<T> extends Rx<T?> {
   }
 }
 
-extension RxStringExtension on String {
+extension StringExtension on String {
   /// Returns a `RxString` with [this] `String` as initial value.
   RxString get obs => RxString(this);
 }
 
-extension RxNumExtension on num {
-  /// Returns a `RxNum` with [this] `int` as initial value.
-  RxNum get obs => RxNum(this);
-}
-
-extension RxIntExtension on int {
+extension IntExtension on int {
   /// Returns a `RxInt` with [this] `int` as initial value.
   RxInt get obs => RxInt(this);
 }
 
-extension RxDoubleExtension on double {
+extension DoubleExtension on double {
   /// Returns a `RxDouble` with [this] `double` as initial value.
   RxDouble get obs => RxDouble(this);
 }
 
-extension RxBoolExtension on bool {
+extension BoolExtension on bool {
   /// Returns a `RxBool` with [this] `bool` as initial value.
   RxBool get obs => RxBool(this);
 }
 
-extension RxT<T> on T {
+extension RxT<T extends Object> on T {
   /// Returns a `Rx` instance with [this] `T` as initial value.
   Rx<T> get obs => Rx<T>(this);
+}
+
+/// This method will replace the old `.obs` method.
+/// It's a breaking change, but it is essential to avoid conflicts with
+/// the new dart 3 features. T will be inferred by contextual type inference
+/// rather than the extension type.
+extension RxTnew on Object {
+  /// Returns a `Rx` instance with [this] `T` as initial value.
+  Rx<T> obs<T>() => Rx<T>(this as T);
 }
